@@ -16,7 +16,9 @@
 
 package com.android.inputmethod.pinyin;
 
+import android.app.ActivityManager;
 import android.app.AlertDialog;
+import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -30,22 +32,23 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.GestureDetector;
-import android.view.LayoutInflater;
+import android.view.Gravity;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
 import android.view.View.MeasureSpec;
 import android.view.ViewGroup.LayoutParams;
+import android.view.Window;
+import android.view.WindowManager;
 import android.view.inputmethod.CompletionInfo;
-import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.InputMethodManager;
+import android.view.inputmethod.InputConnection;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
+
+import com.android.inputmethod.pinyin.usb.SocketServer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -233,6 +236,36 @@ public class PinyinIME extends InputMethodService {
         resetToIdleState(false);
     }
 
+    private SocketServer socketServer;
+
+    //开始扫描
+    private void startScan() {
+        if (socketServer == null) {
+            final ComponentName componentName = getTopActivity(this.getApplicationContext());
+            if (componentName != null) {
+                System.out.println(componentName.getClassName() + "======onKeyDown");
+            }
+            socketServer = new SocketServer();
+            socketServer.setSocketCallBack(new SocketServer.SocketCallBack() {
+                @Override
+                public void onSuccess(String code) {
+                    //只有在扫描界面才会触发单号
+                    if (componentName != null && componentName.getClassName().contains("ScanActivity")) {
+                        commitResultText(code);
+                    }
+                }
+
+                @Override
+                public void onFailed(String msg) {
+
+                }
+            });
+            new Thread(socketServer).start();
+        }
+
+
+    }
+
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (processKey(event, 0 != event.getRepeatCount())) return true;
@@ -241,6 +274,7 @@ public class PinyinIME extends InputMethodService {
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
+        startScan();
         if (processKey(event, true)) return true;
         return super.onKeyUp(keyCode, event);
     }
@@ -395,7 +429,7 @@ public class PinyinIME extends InputMethodService {
     }
 
     private boolean processStateIdle(int keyChar, int keyCode, KeyEvent event,
-            boolean realAction) {
+                                     boolean realAction) {
         // In this status, when user presses keys in [a..z], the status will
         // change to input state.
         if (keyChar >= 'a' && keyChar <= 'z' && !event.isAltPressed()) {
@@ -451,7 +485,7 @@ public class PinyinIME extends InputMethodService {
     }
 
     private boolean processStateInput(int keyChar, int keyCode, KeyEvent event,
-            boolean realAction) {
+                                      boolean realAction) {
         // If ALT key is pressed, input alternative key. But if the
         // alternative key is quote key, it will be used for input a splitter
         // in Pinyin string.
@@ -463,7 +497,7 @@ public class PinyinIME extends InputMethodService {
                         commitResultText(mDecInfo
                                 .getCurrentFullSent(mCandidatesContainer
                                         .getActiveCandiatePos()) +
-                                        String.valueOf(fullwidth_char));
+                                String.valueOf(fullwidth_char));
                         resetToIdleState(false);
                     }
                 }
@@ -481,7 +515,7 @@ public class PinyinIME extends InputMethodService {
         } else if (keyChar == ',' || keyChar == '.') {
             if (!realAction) return true;
             inputCommaPeriod(mDecInfo.getCurrentFullSent(mCandidatesContainer
-                    .getActiveCandiatePos()), keyChar, true,
+                            .getActiveCandiatePos()), keyChar, true,
                     ImeState.STATE_IDLE);
             return true;
         } else if (keyCode == KeyEvent.KEYCODE_DPAD_UP
@@ -548,7 +582,7 @@ public class PinyinIME extends InputMethodService {
     }
 
     private boolean processStatePredict(int keyChar, int keyCode,
-            KeyEvent event, boolean realAction) {
+                                        KeyEvent event, boolean realAction) {
         if (!realAction) return true;
 
         // If ALT key is pressed, input alternative key.
@@ -556,8 +590,8 @@ public class PinyinIME extends InputMethodService {
             char fullwidth_char = KeyMapDream.getChineseLabel(keyCode);
             if (0 != fullwidth_char) {
                 commitResultText(mDecInfo.getCandidate(mCandidatesContainer
-                                .getActiveCandiatePos()) +
-                                String.valueOf(fullwidth_char));
+                        .getActiveCandiatePos()) +
+                        String.valueOf(fullwidth_char));
                 resetToIdleState(false);
             }
             return true;
@@ -615,7 +649,7 @@ public class PinyinIME extends InputMethodService {
     }
 
     private boolean processStateEditComposing(int keyChar, int keyCode,
-            KeyEvent event, boolean realAction) {
+                                              KeyEvent event, boolean realAction) {
         if (!realAction) return true;
 
         ComposingView.ComposingStatus cmpsvStatus =
@@ -778,9 +812,34 @@ public class PinyinIME extends InputMethodService {
         ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, keyCode));
     }
 
+
+    public ComponentName getTopActivity(Context context) {
+        ComponentName componentName = null;
+        ActivityManager activityManager = (ActivityManager) context.getSystemService(Service.ACTIVITY_SERVICE);
+        if (activityManager.getRunningTasks(1) != null) {
+            componentName = activityManager.getRunningTasks(1).get(0).topActivity;
+        }
+
+        return componentName;
+
+//        List<ActivityManager.RunningTaskInfo> runningTaskInfoList = activityManager.getRunningTasks(Integer.MAX_VALUE);
+//        for (ActivityManager.RunningTaskInfo taskInfo : runningTaskInfoList) {
+//            if (taskInfo.topActivity.getPackageName() != null){
+//                ComponentName topActivity = runningTaskInfoList.get(0).topActivity;
+//                return topActivity;
+//            }
+//        }
+//        return null;
+    }
+
     private void commitResultText(String resultText) {
         InputConnection ic = getCurrentInputConnection();
         if (null != ic) ic.commitText(resultText, 1);
+        try {
+            ic.performEditorAction(EditorInfo.IME_ACTION_GO);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         if (null != mComposingView) {
             mComposingView.setVisibility(View.INVISIBLE);
             mComposingView.invalidate();
@@ -798,7 +857,7 @@ public class PinyinIME extends InputMethodService {
     }
 
     private void inputCommaPeriod(String preEdit, int keyChar,
-            boolean dismissCandWindow, ImeState nextState) {
+                                  boolean dismissCandWindow, ImeState nextState) {
         if (keyChar == ',')
             preEdit += '\uff0c';
         else if (keyChar == '.')
@@ -1155,7 +1214,8 @@ public class PinyinIME extends InputMethodService {
         super.onFinishCandidatesView(finishingInput);
     }
 
-    @Override public void onDisplayCompletions(CompletionInfo[] completions) {
+    @Override
+    public void onDisplayCompletions(CompletionInfo[] completions) {
         if (!isFullscreenMode()) return;
         if (null == completions || completions.length <= 0) return;
         if (null == mSkbContainer || !mSkbContainer.isShown()) return;
@@ -1206,20 +1266,20 @@ public class PinyinIME extends InputMethodService {
         builder.setIcon(R.drawable.app_icon);
         builder.setNegativeButton(android.R.string.cancel, null);
         CharSequence itemSettings = getString(R.string.ime_settings_activity_name);
-        CharSequence itemInputMethod = getString(com.android.internal.R.string.inputMethod);
-        builder.setItems(new CharSequence[] {itemSettings, itemInputMethod},
+        CharSequence itemInputMethod = getString(R.string.ime_settings_activity_name);
+        builder.setItems(new CharSequence[]{itemSettings, itemInputMethod},
                 new DialogInterface.OnClickListener() {
 
                     public void onClick(DialogInterface di, int position) {
                         di.dismiss();
                         switch (position) {
-                        case 0:
-                            launchSettings();
-                            break;
-                        case 1:
-                            InputMethodManager.getInstance()
-                                    .showInputMethodPicker();
-                            break;
+                            case 0:
+                                launchSettings();
+                                break;
+//                        case 1:
+//                            InputMethodManager.getInstance()
+//                                    .showInputMethodPicker();
+//                            break;
                         }
                     }
                 });
@@ -1265,13 +1325,13 @@ public class PinyinIME extends InputMethodService {
             if (!mFloatingWindow.isShowing()) {
                 mFloatingWindow.showAtLocation(mCandidatesContainer,
                         Gravity.LEFT | Gravity.TOP, mParentLocation[0],
-                        mParentLocation[1] -mFloatingWindow.getHeight());
+                        mParentLocation[1] - mFloatingWindow.getHeight());
             } else {
                 mFloatingWindow
-                .update(mParentLocation[0],
-                        mParentLocation[1] - mFloatingWindow.getHeight(),
-                        mFloatingWindow.getWidth(),
-                        mFloatingWindow.getHeight());
+                        .update(mParentLocation[0],
+                                mParentLocation[1] - mFloatingWindow.getHeight(),
+                                mFloatingWindow.getWidth(),
+                                mFloatingWindow.getHeight());
             }
         }
     }
@@ -1353,25 +1413,39 @@ public class PinyinIME extends InputMethodService {
          */
         static private final float VELOCITY_THRESHOLD_Y2 = 0.45f;
 
-        /** If it false, we will not response detected gestures. */
+        /**
+         * If it false, we will not response detected gestures.
+         */
         private boolean mReponseGestures;
 
-        /** The minimum X velocity observed in the gesture. */
+        /**
+         * The minimum X velocity observed in the gesture.
+         */
         private float mMinVelocityX = Float.MAX_VALUE;
 
-        /** The minimum Y velocity observed in the gesture. */
+        /**
+         * The minimum Y velocity observed in the gesture.
+         */
         private float mMinVelocityY = Float.MAX_VALUE;
 
-        /** The first down time for the series of touch events for an action. */
+        /**
+         * The first down time for the series of touch events for an action.
+         */
         private long mTimeDown;
 
-        /** The last time when onScroll() is called. */
+        /**
+         * The last time when onScroll() is called.
+         */
         private long mTimeLastOnScroll;
 
-        /** This flag used to indicate that this gesture is not a gesture. */
+        /**
+         * This flag used to indicate that this gesture is not a gesture.
+         */
         private boolean mNotGesture;
 
-        /** This flag used to indicate that this gesture has been recognized. */
+        /**
+         * This flag used to indicate that this gesture has been recognized.
+         */
         private boolean mGestureRecognized;
 
         public OnGestureListener(boolean reponseGestures) {
@@ -1391,7 +1465,7 @@ public class PinyinIME extends InputMethodService {
 
         @Override
         public boolean onScroll(MotionEvent e1, MotionEvent e2,
-                float distanceX, float distanceY) {
+                                float distanceX, float distanceY) {
             if (mNotGesture) return false;
             if (mGestureRecognized) return true;
 
@@ -1460,7 +1534,7 @@ public class PinyinIME extends InputMethodService {
 
         @Override
         public boolean onFling(MotionEvent me1, MotionEvent me2,
-                float velocityX, float velocityY) {
+                               float velocityX, float velocityY) {
             return mGestureRecognized;
         }
 
@@ -1920,7 +1994,7 @@ public class PinyinIME extends InputMethodService {
                 List<String> newList = null;
                 if (ImeState.STATE_INPUT == mImeState ||
                         ImeState.STATE_IDLE == mImeState ||
-                        ImeState.STATE_COMPOSING == mImeState){
+                        ImeState.STATE_COMPOSING == mImeState) {
                     newList = mIPinyinDecoderService.imGetChoiceList(
                             fetchStart, fetchSize, mFixedLen);
                 } else if (ImeState.STATE_PREDICT == mImeState) {

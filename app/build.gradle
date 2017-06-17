@@ -1,13 +1,13 @@
 apply plugin: 'com.android.application'
 android {
-    compileSdkVersion 23
-    buildToolsVersion "24.0.3"
+    compileSdkVersion 25
+    buildToolsVersion "25.0.2"
 
     aaptOptions {
         noCompress 'dat'
     }
     defaultConfig {
-        minSdkVersion 14
+        minSdkVersion 15
         targetSdkVersion 23
         applicationId "com.android.inputmethod.pinyin"
 
@@ -25,12 +25,16 @@ android {
         }
     }
 
+//    externalNativeBuild {
+//        cmake {
+//            path 'src/main/cpp/CMakeLists.txt'
+//        }
+//    }
+
+    // android {
     externalNativeBuild {
-        cmake {
-            path 'src/main/cpp/CMakeLists.txt'
+        ndkBuild {
+            path "src/main/cpp/Android.mk"
         }
     }
-}
-
-dependencies {
 }

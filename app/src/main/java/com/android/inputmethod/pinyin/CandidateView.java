@@ -16,23 +16,23 @@
 
 package com.android.inputmethod.pinyin;
 
-import com.android.inputmethod.pinyin.PinyinIME.DecodingInfo;
-
-import java.util.Vector;
-
 import android.content.Context;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.RectF;
 import android.graphics.Paint.FontMetricsInt;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
+
+import com.android.inputmethod.pinyin.PinyinIME.DecodingInfo;
+
+import java.util.Vector;
 
 /**
  * View to show candidate list. There two candidate view instances which are
@@ -359,6 +359,8 @@ public class CandidateView extends View {
         }
         return false;
     }
+
+    private int mPaddingLeft = 0,mPaddingRight = 0,mPaddingTop =0,mPaddingBottom= 0;
 
     private void onSizeChanged() {
         mContentWidth = getMeasuredWidth() - mPaddingLeft - mPaddingRight;

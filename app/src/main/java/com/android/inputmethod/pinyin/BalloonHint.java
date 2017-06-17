@@ -385,6 +385,8 @@ public class BalloonHint extends PopupWindow {
             mSuspensionPointsWidth = mPaintLabel.measureText(SUSPENSION_POINTS);
         }
 
+        private int mPaddingLeft = 0,mPaddingRight = 0,mPaddingTop = 0,mPaddingBottom = 0;
+
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             final int widthMode = MeasureSpec.getMode(widthMeasureSpec);

@@ -23,6 +23,7 @@
         <uses-permission android:name="android.permission.READ_USER_DICTIONARY"/>
         <uses-permission android:name="android.permission.WRITE_USER_DICTIONARY"/>
         <uses-permission android:name="android.permission.READ_CONTACTS"/>
+    <uses-permission android:name="android.permission.GET_TASKS"/>
 
         <application android:icon="@drawable/app_icon"
           android:label="@string/ime_name">

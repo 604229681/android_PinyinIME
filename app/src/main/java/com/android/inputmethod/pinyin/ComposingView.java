@@ -190,14 +190,14 @@ public class ComposingView extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        float width;
-        int height;
-        height = mFmi.bottom - mFmi.top + mPaddingTop + mPaddingBottom;
+        float width =0 ;
+        int height = 0;
+//        height = mFmi.bottom - mFmi.top + mPaddingTop + mPaddingBottom;
 
         if (null == mDecInfo) {
             width = 0;
         } else {
-            width = mPaddingLeft + mPaddingRight + LEFT_RIGHT_MARGIN * 2;
+//            width = mPaddingLeft + mPaddingRight + LEFT_RIGHT_MARGIN * 2;
 
             String str;
             if (ComposingStatus.SHOW_STRING_LOWERCASE == mComposingStatus) {
@@ -218,13 +218,13 @@ public class ComposingView extends View {
             return;
         }
 
-        float x, y;
-        x = mPaddingLeft + LEFT_RIGHT_MARGIN;
-        y = -mFmi.top + mPaddingTop;
+        float x = 0, y = 0;
+//        x = mPaddingLeft + LEFT_RIGHT_MARGIN;
+//        y = -mFmi.top + mPaddingTop;
 
-        mPaint.setColor(mStrColorHl);
-        mHlDrawable.setBounds(mPaddingLeft, mPaddingTop, getWidth()
-                - mPaddingRight, getHeight() - mPaddingBottom);
+//        mPaint.setColor(mStrColorHl);
+//        mHlDrawable.setBounds(mPaddingLeft, mPaddingTop, getWidth()
+//                - mPaddingRight, getHeight() - mPaddingBottom);
         mHlDrawable.draw(canvas);
 
         String splStr = mDecInfo.getOrigianlSplStr().toString();
@@ -232,15 +232,15 @@ public class ComposingView extends View {
     }
 
     private void drawCursor(Canvas canvas, float x) {
-        mCursor.setBounds((int) x, mPaddingTop, (int) x
-                + mCursor.getIntrinsicWidth(), getHeight() - mPaddingBottom);
+//        mCursor.setBounds((int) x, mPaddingTop, (int) x
+//                + mCursor.getIntrinsicWidth(), getHeight() - mPaddingBottom);
         mCursor.draw(canvas);
     }
 
     private void drawForPinyin(Canvas canvas) {
-        float x, y;
-        x = mPaddingLeft + LEFT_RIGHT_MARGIN;
-        y = -mFmi.top + mPaddingTop;
+        float x =0, y =0;
+//        x = mPaddingLeft + LEFT_RIGHT_MARGIN;
+//        y = -mFmi.top + mPaddingTop;
 
         mPaint.setColor(mStrColor);
 

@@ -16,19 +16,19 @@
 
 package com.android.inputmethod.pinyin;
 
-import com.android.inputmethod.pinyin.SoftKeyboard.KeyRow;
-
-import java.util.List;
-
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.graphics.Paint.FontMetricsInt;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Vibrator;
 import android.util.AttributeSet;
 import android.view.View;
+
+import com.android.inputmethod.pinyin.SoftKeyboard.KeyRow;
+
+import java.util.List;
 
 /**
  * Class used to show a soft keyboard.
@@ -121,7 +121,7 @@ public class SoftKeyboardView extends View {
     public SoftKeyboardView(Context context, AttributeSet attrs) {
         super(context, attrs);
 
-        mSoundManager = SoundManager.getInstance(mContext);
+        mSoundManager = SoundManager.getInstance(context);
 
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
@@ -157,6 +157,8 @@ public class SoftKeyboardView extends View {
         mOffsetToSkbContainer[0] = offsetToSkbContainer[0];
         mOffsetToSkbContainer[1] = offsetToSkbContainer[1];
     }
+
+    private int mPaddingRight = 0,mPaddingBottom =0;
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -314,6 +316,8 @@ public class SoftKeyboardView extends View {
         if (mRepeatForLongPress) longPressTimer.startTimer();
         return mSoftKeyDown;
     }
+
+    private int mPaddingLeft = 0,mPaddingTop = 0;
 
     public SoftKey onKeyRelease(int x, int y) {
         mKeyPressed = false;
