@@ -7,6 +7,7 @@ import android.util.Log;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -26,7 +27,7 @@ public class SocketServer implements Runnable {
     private ServerSocket mSocketServer = null;
     private InputStream inputStream = null;
     private OutputStream outputStream = null;
-    
+
     Handler mMessageHandler = new Handler() {
         public void handleMessage(Message msg) {
             switch (msg.what) {
@@ -83,12 +84,17 @@ public class SocketServer implements Runnable {
     @Override
     public void run() {
         try {
+            closeSocket();
             Log.d(TAG, "start socket server...");
-            mSocketServer = new ServerSocket(SERVER_PORT);
-            Log.d(TAG, "connecting...");
-            Socket client = mSocketServer.accept();
-            inputStream = client.getInputStream();
-            outputStream = client.getOutputStream();
+            if(mSocketServer == null) {
+                mSocketServer = new ServerSocket(); // <-- create an unbound socket first
+                mSocketServer.setReuseAddress(true);
+                mSocketServer.bind(new InetSocketAddress(SERVER_PORT)); // <-- now bind it
+                Log.d(TAG, "connecting...");
+                Socket client = mSocketServer.accept();
+                inputStream = client.getInputStream();
+                outputStream = client.getOutputStream();
+            }
 
             while (true) {
                 String code = readFromSocket();
@@ -106,16 +112,27 @@ public class SocketServer implements Runnable {
             }
         } finally {
             try {
-                if (outputStream != null)
-                    outputStream.close();
-                if (inputStream != null)
-                    inputStream.close();
-                if (mSocketServer != null)
-                    mSocketServer.close();
+                closeSocket();
             } catch (Exception e) {
                 e.printStackTrace();
             }
             mMessageHandler.obtainMessage(MSG_RESTART_THREATH, null).sendToTarget();
+        }
+    }
+
+    //关闭socket 服务
+    private void closeSocket() throws IOException {
+        if (outputStream != null) {
+            outputStream.close();
+            outputStream = null;
+        }
+        if (inputStream != null) {
+            inputStream.close();
+            inputStream = null;
+        }
+        if (mSocketServer != null) {
+            mSocketServer.close();
+            mSocketServer = null;
         }
     }
 
@@ -127,7 +144,7 @@ public class SocketServer implements Runnable {
             return null;
         int numBytes = inputStream.read(buffer, 0, buffer.length);
 
-        return DataProtocol.getCheckCode(buffer,numBytes);
+        return DataProtocol.getCheckCode(buffer, numBytes);
     }
 
     private SocketCallBack socketCallBack;
