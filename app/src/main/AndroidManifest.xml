@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Copyright (C) 2009 The Android Open Source Project
+<?xml version="1.0" encoding="utf-8"?><!-- Copyright (C) 2009 The Android Open Source Project
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -16,41 +15,62 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.android.inputmethod.pinyin">
 
-        <original-package android:name="com.android.inputmethod.pinyin" />
+    <original-package android:name="com.android.inputmethod.pinyin" />
 
-        <uses-permission android:name="android.permission.VIBRATE"/>
-        <uses-permission android:name="android.permission.INTERNET"/>
-        <uses-permission android:name="android.permission.READ_USER_DICTIONARY"/>
-        <uses-permission android:name="android.permission.WRITE_USER_DICTIONARY"/>
-        <uses-permission android:name="android.permission.READ_CONTACTS"/>
-    <uses-permission android:name="android.permission.GET_TASKS"/>
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_USER_DICTIONARY" />
+    <uses-permission android:name="android.permission.WRITE_USER_DICTIONARY" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.GET_TASKS" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_INTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_INTERNAL_STORAGE" />
+    <!-- 必选 -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"></uses-permission>
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"></uses-permission>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE"></uses-permission>
 
-        <application android:icon="@drawable/app_icon"
-          android:label="@string/ime_name">
-            <service android:name=".PinyinDecoderService"
-                android:exported="true">
-                <intent-filter>
-                    <action android:name="com.android.inputmethod.pinyin.Decoder_Service" />
-                    <category android:name="android.intent.category.DEFAULT" />
-                </intent-filter>
-            </service>
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
-            <service android:name=".PinyinIME"
-                android:label="@string/ime_name"
-                    android:permission="android.permission.BIND_INPUT_METHOD">
-                <intent-filter>
-                    <action android:name="android.view.InputMethod" />
-                </intent-filter>
-                <meta-data android:name="android.view.im" android:resource="@xml/method" />
-            </service>
 
-            <activity android:name=".SettingsActivity"
-                android:label="@string/ime_settings_activity_name">
-                <intent-filter>
-                    <action android:name="android.intent.action.MAIN"/>
-                    <category android:name="android.intent.category.LAUNCHER" />
-                </intent-filter>
-            </activity>
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/app_icon"
+        android:label="@string/app_name"
+        android:supportsRtl="true">
+        <service
+            android:name=".PinyinDecoderService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.android.inputmethod.pinyin.Decoder_Service" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </service>
 
-        </application>
+        <service
+            android:name=".PinyinIME"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_INPUT_METHOD">
+            <intent-filter>
+                <action android:name="android.view.InputMethod" />
+            </intent-filter>
+            <meta-data
+                android:name="android.view.im"
+                android:resource="@xml/method" />
+        </service>
+
+        <activity
+            android:name=".SettingsActivity"
+            android:label="@string/ime_settings_activity_name">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <meta-data
+            android:name="BUG_HD_SDK_GENERAL_KEY"
+            android:value="8e1347af9b5fa002d88162a136d4d24e" />
+    </application>
 </manifest>

@@ -1,4 +1,6 @@
 apply plugin: 'com.android.application'
+apply plugin: 'org.greenrobot.greendao'
+
 android {
     compileSdkVersion 25
     buildToolsVersion "25.0.2"
@@ -8,9 +10,10 @@ android {
     }
     defaultConfig {
         minSdkVersion 15
-        targetSdkVersion 23
+        targetSdkVersion 22
         applicationId "com.android.inputmethod.pinyin"
-
+        versionCode 1
+        versionName "0.0.1"
         externalNativeBuild {
             cmake {
                 cppFlags "-Wall"
@@ -25,6 +28,20 @@ android {
         }
     }
 
+    //数据库版本以及Dao的相关设置
+    greendao {
+        //数据库schema版本
+        schemaVersion 1
+        //设置DaoMaster DaoSession Dao包名，默认的是bean所在的包名
+        daoPackage 'com.android.inputmethod.pinyin.greendao'
+        //设置DaoMaster DaoSeeeion Dao目录，默认是build/generated/source/greendao
+        targetGenDir 'src/main/java'
+        //设置true,自动生成测试单元
+        //generateTests 'true'
+        //设置生成的单元测试目录，默认是src/androidTest/java
+        //targetGenDirTests 'src/androidTest/java'
+    }
+
 //    externalNativeBuild {
 //        cmake {
 //            path 'src/main/cpp/CMakeLists.txt'
@@ -37,4 +54,21 @@ android {
             path "src/main/cpp/Android.mk"
         }
     }
+
+    applicationVariants.all {
+        variant ->
+            variant.outputs.each { output ->
+                def outputFile = output.outputFile
+                def fileName_builder = new StringBuilder().append("${"PinyinIME"}")
+                        .append("_").append("${defaultConfig.versionName}")
+                        .append("_").append(variant.buildType.name)
+                output.outputFile = new File(outputFile.parent, fileName_builder.append(".apk").toString());
+            }
+    }
+}
+
+dependencies {
+    compile 'im.fir:fir-sdk:latest.integration@aar'
+    compile 'com.tamic.novate:novate:1.5.2.3'
+    compile 'org.greenrobot:greendao:3.2.2'
 }

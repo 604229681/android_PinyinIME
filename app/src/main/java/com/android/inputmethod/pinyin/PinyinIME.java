@@ -26,6 +26,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.res.Configuration;
+import android.graphics.PixelFormat;
 import android.inputmethodservice.InputMethodService;
 import android.os.Handler;
 import android.os.IBinder;
@@ -47,12 +48,19 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.widget.LinearLayout;
 import android.widget.PopupWindow;
+import android.widget.TextView;
 
+import com.android.inputmethod.pinyin.greendao.entity.Scan;
+import com.android.inputmethod.pinyin.net.NetworkManager;
 import com.android.inputmethod.pinyin.usb.SocketServer;
+import com.android.inputmethod.pinyin.util.DateUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
+
+import im.fir.sdk.FIR;
+import im.fir.sdk.VersionCheckCallback;
 
 /**
  * Main class of the Pinyin input method.
@@ -199,6 +207,8 @@ public class PinyinIME extends InputMethodService {
 
         mEnvironment.onConfigurationChanged(getResources().getConfiguration(),
                 this);
+        //bugH初始化
+        FIR.init(this);
     }
 
     @Override
@@ -240,17 +250,19 @@ public class PinyinIME extends InputMethodService {
 
     //开始扫描
     private void startScan() {
-        if (socketServer == null) {
-            final ComponentName componentName = getTopActivity(this.getApplicationContext());
-            if (componentName != null) {
-                System.out.println(componentName.getClassName() + "======onKeyDown");
-            }
+
+        final ComponentName componentName = getTopActivity(this.getApplicationContext());
+        if (componentName != null) {
+            System.out.println(componentName.getClassName() + "======onKeyDown");
+        }
+
+        if (componentName != null && (componentName.getClassName().contains("Weight")|| componentName.getClassName().contains("ScanActivity")) || socketServer == null) {
             socketServer = new SocketServer();
             socketServer.setSocketCallBack(new SocketServer.SocketCallBack() {
                 @Override
                 public void onSuccess(String code) {
                     //只有在扫描界面才会触发单号
-                    if (componentName != null && componentName.getClassName().contains("ScanActivity")) {
+                    if (componentName != null && (componentName.getClassName().contains("Weight")|| componentName.getClassName().contains("ScanActivity"))) {
                         commitResultText(code);
                     }
                 }
@@ -263,7 +275,6 @@ public class PinyinIME extends InputMethodService {
             new Thread(socketServer).start();
         }
 
-
     }
 
     @Override
@@ -274,9 +285,42 @@ public class PinyinIME extends InputMethodService {
 
     @Override
     public boolean onKeyUp(int keyCode, KeyEvent event) {
+        checkUpdate();
         startScan();
+        showVideoWindow();
         if (processKey(event, true)) return true;
         return super.onKeyUp(keyCode, event);
+    }
+
+    private long currentTime = 0;
+
+    public void checkUpdate() {
+        //检测跨天
+        if (currentTime == 0 || !DateUtil.getDetaultDateFromMillis(System.currentTimeMillis()).equals(DateUtil.getDetaultDateFromMillis(currentTime))) {
+            currentTime = System.currentTimeMillis();
+            FIR.checkForUpdateInFIR("c19775741be9b284fa00057e3c778fa0", new VersionCheckCallback() {
+                @Override
+                public void onSuccess(String versionJson) {
+                    Log.i("fir", "check from fir.im success! " + "\n" + versionJson);
+                    NetworkManager.with(PinyinIME.this.getApplicationContext()).downloadApk(versionJson);
+                }
+
+                @Override
+                public void onFail(Exception exception) {
+                    Log.i("fir", "check fir.im fail! " + "\n" + exception.getMessage());
+                }
+
+                @Override
+                public void onStart() {
+                    //Toast.makeText(getApplicationContext(), "正在获取", Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onFinish() {
+                    //Toast.makeText(getApplicationContext(), "获取完成", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
     }
 
     private boolean processKey(KeyEvent event, boolean realAction) {
@@ -839,6 +883,8 @@ public class PinyinIME extends InputMethodService {
             ic.performEditorAction(EditorInfo.IME_ACTION_GO);
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            NetworkManager.insertScan(new Scan(0, resultText, System.currentTimeMillis(), "", "", ""));
         }
         if (null != mComposingView) {
             mComposingView.setVisibility(View.INVISIBLE);
@@ -1283,7 +1329,7 @@ public class PinyinIME extends InputMethodService {
                         }
                     }
                 });
-        builder.setTitle(getString(R.string.ime_name));
+        builder.setTitle(getString(R.string.app_name));
         mOptionsDialog = builder.create();
         Window window = mOptionsDialog.getWindow();
         WindowManager.LayoutParams lp = window.getAttributes();
@@ -2203,6 +2249,52 @@ public class PinyinIME extends InputMethodService {
 
         public int getFixedLen() {
             return mFixedLen;
+        }
+    }
+
+    private WindowManager windowManager;
+
+    private WindowManager.LayoutParams params;
+
+    private TextView button;
+
+    private long codeCount = 0;
+
+    private void showVideoWindow() {
+        try {
+            codeCount = NetworkManager.getCurrentDayCodeCount();
+            if (windowManager == null) {
+                //类型是TYPE_TOAST，像一个普通的Android Toast一样。这样就不需要申请悬浮窗权限了。
+                params = new WindowManager.LayoutParams();
+                // 类型
+                params.type = WindowManager.LayoutParams.TYPE_PHONE;
+                // WindowManager.LayoutParams.TYPE_SYSTEM_ALERT
+                // 设置flag
+                int flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+                // | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+                // 如果设置了WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE，弹出的View收不到Back键的事件
+                params.flags = flags;
+                // 不设置这个弹出框的透明遮罩显示为黑色
+                params.format = PixelFormat.RGBA_8888;
+                params.gravity = Gravity.CENTER | Gravity.TOP;
+                params.width = 200;
+                params.height = 50;
+                windowManager = (WindowManager) this.getApplicationContext().getSystemService(this.getApplicationContext().WINDOW_SERVICE);
+                button = new TextView(this.getApplicationContext());
+                button.setGravity(Gravity.CENTER);
+                button.setFocusable(false);
+                button.setTextSize(25);
+                button.setTextColor(getResources().getColor(R.color.code_color_idle));
+                button.setFocusableInTouchMode(false);
+                windowManager.addView(button, params);
+                button.setText((codeCount) + " 票");
+            } else {
+                if (null != button) {
+                    button.setText((codeCount) + " 票");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

@@ -16,7 +16,15 @@
 
 package com.android.inputmethod.pinyin;
 
-import com.android.inputmethod.pinyin.IPinyinDecoderService;
+import android.app.Service;
+import android.content.Context;
+import android.content.Intent;
+import android.content.res.AssetFileDescriptor;
+import android.os.IBinder;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.WindowManager;
+import android.widget.Button;
 
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
@@ -24,23 +32,16 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Vector;
 
-import android.app.Service;
-import android.content.Intent;
-import android.content.res.AssetFileDescriptor;
-import android.os.IBinder;
-import android.os.RemoteException;
-import android.util.Log;
-
 /**
  * This class is used to separate the input method kernel in an individual
  * service so that both IME and IME-syncer can use it.
  */
 public class PinyinDecoderService extends Service {
     native static boolean nativeImOpenDecoder(byte fn_sys_dict[],
-            byte fn_usr_dict[]);
+                                              byte fn_usr_dict[]);
 
     native static boolean nativeImOpenDecoderFd(FileDescriptor fd,
-            long startOffset, long length, byte fn_usr_dict[]);
+                                                long startOffset, long length, byte fn_usr_dict[]);
 
     native static void nativeImSetMaxLens(int maxSpsLen, int maxHzsLen);
 
@@ -49,7 +50,7 @@ public class PinyinDecoderService extends Service {
     native static int nativeImSearch(byte pyBuf[], int pyLen);
 
     native static int nativeImDelSearch(int pos, boolean is_pos_in_splid,
-            boolean clear_fixed_this_step);
+                                        boolean clear_fixed_this_step);
 
     native static void nativeImResetSearch();
 
@@ -183,7 +184,7 @@ public class PinyinDecoderService extends Service {
         }
 
         public int imDelSearch(int pos, boolean is_pos_in_splid,
-                boolean clear_fixed_this_step) {
+                               boolean clear_fixed_this_step) {
             return nativeImDelSearch(pos, is_pos_in_splid,
                     clear_fixed_this_step);
         }
@@ -224,7 +225,7 @@ public class PinyinDecoderService extends Service {
         }
 
         public List<String> imGetChoiceList(int choicesStart, int choicesNum,
-                int sentFixedLen) {
+                                            int sentFixedLen) {
             Vector<String> choiceList = new Vector<String>();
             for (int i = choicesStart; i < choicesStart + choicesNum; i++) {
                 String retStr = nativeImGetChoice(i);
@@ -323,4 +324,5 @@ public class PinyinDecoderService extends Service {
     public IBinder onBind(Intent intent) {
         return mBinder;
     }
+
 }

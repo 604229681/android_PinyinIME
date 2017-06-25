@@ -24,4 +24,5 @@
     <color name="composing_color">#ff000000</color>
     <color name="composing_color_hl">#ffffffff</color>
     <color name="composing_color_idle">#ff777777</color>
+    <color name="code_color_idle">#00D204</color>
 </resources>

@@ -121,7 +121,7 @@ public class SocketServer implements Runnable {
     }
 
     //关闭socket 服务
-    private void closeSocket() throws IOException {
+    public void closeSocket() throws IOException {
         if (outputStream != null) {
             outputStream.close();
             outputStream = null;

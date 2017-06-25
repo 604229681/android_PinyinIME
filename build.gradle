@@ -5,11 +5,16 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:2.3.0'
+        classpath 'org.greenrobot:greendao-gradle-plugin:3.2.2'
     }
 }
 
 allprojects {
     repositories {
         jcenter()
+        maven {
+            url "http://maven.bughd.com/public"
+        }
+        maven { url "https://jitpack.io" }
     }
 }
