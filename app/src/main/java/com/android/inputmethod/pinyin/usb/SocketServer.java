@@ -45,7 +45,7 @@ public class SocketServer implements Runnable {
                         public void run() {
                             new Thread(SocketServer.this).start();
                         }
-                    }, 1500);
+                    }, 5000);
                     break;
                 default:
                     break;
@@ -86,10 +86,11 @@ public class SocketServer implements Runnable {
         try {
             closeSocket();
             Log.d(TAG, "start socket server...");
-            if(mSocketServer == null) {
+            if (mSocketServer == null) {
                 mSocketServer = new ServerSocket(); // <-- create an unbound socket first
                 mSocketServer.setReuseAddress(true);
                 mSocketServer.bind(new InetSocketAddress(SERVER_PORT)); // <-- now bind it
+
                 Log.d(TAG, "connecting...");
                 Socket client = mSocketServer.accept();
                 inputStream = client.getInputStream();

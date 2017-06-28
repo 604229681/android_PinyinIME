@@ -25,7 +25,6 @@ public class DataProtocol {
                 if (buffer[codeLen + 7] == (crc & 0xFF)) {
                     try {
                         scanCode = new String(codeBuff, 0, codeBuff.length, "utf-8");
-                        System.out.println(scanCode + "=========================");
                     } catch (UnsupportedEncodingException e) {
                         e.printStackTrace();
                     }

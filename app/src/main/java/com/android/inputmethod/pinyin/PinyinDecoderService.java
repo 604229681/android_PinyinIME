@@ -26,6 +26,8 @@ import android.view.Gravity;
 import android.view.WindowManager;
 import android.widget.Button;
 
+import com.android.inputmethod.pinyin.net.NetworkManager;
+
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
 import java.io.IOException;

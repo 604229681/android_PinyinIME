@@ -247,22 +247,23 @@ public class PinyinIME extends InputMethodService {
     }
 
     private SocketServer socketServer;
+    private ComponentName componentName;
 
     //开始扫描
     private void startScan() {
 
-        final ComponentName componentName = getTopActivity(this.getApplicationContext());
+        componentName = getTopActivity(this.getApplicationContext());
         if (componentName != null) {
             System.out.println(componentName.getClassName() + "======onKeyDown");
         }
 
-        if (componentName != null && (componentName.getClassName().contains("Weight")|| componentName.getClassName().contains("ScanActivity")) || socketServer == null) {
+        if (socketServer == null) {
             socketServer = new SocketServer();
             socketServer.setSocketCallBack(new SocketServer.SocketCallBack() {
                 @Override
                 public void onSuccess(String code) {
                     //只有在扫描界面才会触发单号
-                    if (componentName != null && (componentName.getClassName().contains("Weight")|| componentName.getClassName().contains("ScanActivity"))) {
+                    if (componentName != null && (componentName.getClassName().contains("Weigh") || componentName.getClassName().contains("ScanActivity"))) {
                         commitResultText(code);
                     }
                 }
@@ -287,7 +288,6 @@ public class PinyinIME extends InputMethodService {
     public boolean onKeyUp(int keyCode, KeyEvent event) {
         checkUpdate();
         startScan();
-        showVideoWindow();
         if (processKey(event, true)) return true;
         return super.onKeyUp(keyCode, event);
     }
@@ -320,6 +320,8 @@ public class PinyinIME extends InputMethodService {
                     //Toast.makeText(getApplicationContext(), "获取完成", Toast.LENGTH_SHORT).show();
                 }
             });
+
+            NetworkManager.deleteHistoryData();
         }
     }
 
@@ -878,13 +880,17 @@ public class PinyinIME extends InputMethodService {
 
     private void commitResultText(String resultText) {
         InputConnection ic = getCurrentInputConnection();
-        if (null != ic) ic.commitText(resultText, 1);
+
         try {
-            ic.performEditorAction(EditorInfo.IME_ACTION_GO);
+            if (null != ic) {
+                ic.commitText(resultText, 1);
+                ic.performEditorAction(EditorInfo.IME_ACTION_GO);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            NetworkManager.insertScan(new Scan(0, resultText, System.currentTimeMillis(), "", "", ""));
+            NetworkManager.insertScan(new Scan(resultText, System.currentTimeMillis(), "", "", ""));
+            showScanWindow();
         }
         if (null != mComposingView) {
             mComposingView.setVisibility(View.INVISIBLE);
@@ -2260,41 +2266,49 @@ public class PinyinIME extends InputMethodService {
 
     private long codeCount = 0;
 
-    private void showVideoWindow() {
-        try {
-            codeCount = NetworkManager.getCurrentDayCodeCount();
-            if (windowManager == null) {
-                //类型是TYPE_TOAST，像一个普通的Android Toast一样。这样就不需要申请悬浮窗权限了。
-                params = new WindowManager.LayoutParams();
-                // 类型
-                params.type = WindowManager.LayoutParams.TYPE_PHONE;
-                // WindowManager.LayoutParams.TYPE_SYSTEM_ALERT
-                // 设置flag
-                int flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-                // | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-                // 如果设置了WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE，弹出的View收不到Back键的事件
-                params.flags = flags;
-                // 不设置这个弹出框的透明遮罩显示为黑色
-                params.format = PixelFormat.RGBA_8888;
-                params.gravity = Gravity.CENTER | Gravity.TOP;
-                params.width = 200;
-                params.height = 50;
-                windowManager = (WindowManager) this.getApplicationContext().getSystemService(this.getApplicationContext().WINDOW_SERVICE);
-                button = new TextView(this.getApplicationContext());
-                button.setGravity(Gravity.CENTER);
-                button.setFocusable(false);
-                button.setTextSize(25);
-                button.setTextColor(getResources().getColor(R.color.code_color_idle));
-                button.setFocusableInTouchMode(false);
-                windowManager.addView(button, params);
-                button.setText((codeCount) + " 票");
-            } else {
-                if (null != button) {
-                    button.setText((codeCount) + " 票");
+    private Handler mHandler = new Handler();
+
+    private void showScanWindow() {
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    codeCount = NetworkManager.getCurrentDayCodeCount();
+                    if (windowManager == null) {
+                        //类型是TYPE_TOAST，像一个普通的Android Toast一样。这样就不需要申请悬浮窗权限了。
+                        params = new WindowManager.LayoutParams();
+                        // 类型
+                        params.type = WindowManager.LayoutParams.TYPE_PHONE;
+                        // WindowManager.LayoutParams.TYPE_SYSTEM_ALERT
+                        // 设置flag
+                        int flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+                        // | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+                        // 如果设置了WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE，弹出的View收不到Back键的事件
+                        params.flags = flags;
+                        // 不设置这个弹出框的透明遮罩显示为黑色
+                        params.format = PixelFormat.RGBA_8888;
+                        params.gravity = Gravity.CENTER | Gravity.TOP;
+                        params.width = 200;
+                        params.height = 50;
+                        windowManager = (WindowManager) PinyinIME.this.getApplicationContext().getSystemService(PinyinIME.this.getApplicationContext().WINDOW_SERVICE);
+                        button = new TextView(PinyinIME.this.getApplicationContext());
+                        button.setGravity(Gravity.CENTER);
+                        button.setFocusable(false);
+                        button.setTextSize(25);
+                        button.setTextColor(getResources().getColor(R.color.code_color_idle));
+                        button.setFocusableInTouchMode(false);
+                        windowManager.addView(button, params);
+                        button.setText((codeCount) + " 票");
+                    } else {
+                        if (null != button) {
+                            button.setText((codeCount) + " 票");
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
+
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        });
     }
 }

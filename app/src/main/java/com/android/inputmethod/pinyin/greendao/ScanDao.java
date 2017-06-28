@@ -15,7 +15,7 @@ import com.android.inputmethod.pinyin.greendao.entity.Scan;
 /** 
  * DAO for table "SCAN".
 */
-public class ScanDao extends AbstractDao<Scan, Long> {
+public class ScanDao extends AbstractDao<Scan, Void> {
 
     public static final String TABLENAME = "SCAN";
 
@@ -24,12 +24,11 @@ public class ScanDao extends AbstractDao<Scan, Long> {
      * Can be used for QueryBuilder and for referencing column names.
      */
     public static class Properties {
-        public final static Property Id = new Property(0, long.class, "id", true, "_id");
-        public final static Property Code = new Property(1, String.class, "code", false, "CODE");
-        public final static Property Time = new Property(2, long.class, "time", false, "TIME");
-        public final static Property BackOne = new Property(3, String.class, "backOne", false, "BACK_ONE");
-        public final static Property BackTwo = new Property(4, String.class, "backTwo", false, "BACK_TWO");
-        public final static Property BackThree = new Property(5, String.class, "backThree", false, "BACK_THREE");
+        public final static Property Code = new Property(0, String.class, "code", false, "CODE");
+        public final static Property Time = new Property(1, long.class, "time", false, "TIME");
+        public final static Property BackOne = new Property(2, String.class, "backOne", false, "BACK_ONE");
+        public final static Property BackTwo = new Property(3, String.class, "backTwo", false, "BACK_TWO");
+        public final static Property BackThree = new Property(4, String.class, "backThree", false, "BACK_THREE");
     }
 
 
@@ -45,12 +44,11 @@ public class ScanDao extends AbstractDao<Scan, Long> {
     public static void createTable(Database db, boolean ifNotExists) {
         String constraint = ifNotExists? "IF NOT EXISTS ": "";
         db.execSQL("CREATE TABLE " + constraint + "\"SCAN\" (" + //
-                "\"_id\" INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL ," + // 0: id
-                "\"CODE\" TEXT UNIQUE ," + // 1: code
-                "\"TIME\" INTEGER NOT NULL ," + // 2: time
-                "\"BACK_ONE\" TEXT," + // 3: backOne
-                "\"BACK_TWO\" TEXT," + // 4: backTwo
-                "\"BACK_THREE\" TEXT);"); // 5: backThree
+                "\"CODE\" TEXT UNIQUE ," + // 0: code
+                "\"TIME\" INTEGER NOT NULL ," + // 1: time
+                "\"BACK_ONE\" TEXT," + // 2: backOne
+                "\"BACK_TWO\" TEXT," + // 3: backTwo
+                "\"BACK_THREE\" TEXT);"); // 4: backThree
     }
 
     /** Drops the underlying database table. */
@@ -62,103 +60,96 @@ public class ScanDao extends AbstractDao<Scan, Long> {
     @Override
     protected final void bindValues(DatabaseStatement stmt, Scan entity) {
         stmt.clearBindings();
-        stmt.bindLong(1, entity.getId());
  
         String code = entity.getCode();
         if (code != null) {
-            stmt.bindString(2, code);
+            stmt.bindString(1, code);
         }
-        stmt.bindLong(3, entity.getTime());
+        stmt.bindLong(2, entity.getTime());
  
         String backOne = entity.getBackOne();
         if (backOne != null) {
-            stmt.bindString(4, backOne);
+            stmt.bindString(3, backOne);
         }
  
         String backTwo = entity.getBackTwo();
         if (backTwo != null) {
-            stmt.bindString(5, backTwo);
+            stmt.bindString(4, backTwo);
         }
  
         String backThree = entity.getBackThree();
         if (backThree != null) {
-            stmt.bindString(6, backThree);
+            stmt.bindString(5, backThree);
         }
     }
 
     @Override
     protected final void bindValues(SQLiteStatement stmt, Scan entity) {
         stmt.clearBindings();
-        stmt.bindLong(1, entity.getId());
  
         String code = entity.getCode();
         if (code != null) {
-            stmt.bindString(2, code);
+            stmt.bindString(1, code);
         }
-        stmt.bindLong(3, entity.getTime());
+        stmt.bindLong(2, entity.getTime());
  
         String backOne = entity.getBackOne();
         if (backOne != null) {
-            stmt.bindString(4, backOne);
+            stmt.bindString(3, backOne);
         }
  
         String backTwo = entity.getBackTwo();
         if (backTwo != null) {
-            stmt.bindString(5, backTwo);
+            stmt.bindString(4, backTwo);
         }
  
         String backThree = entity.getBackThree();
         if (backThree != null) {
-            stmt.bindString(6, backThree);
+            stmt.bindString(5, backThree);
         }
     }
 
     @Override
-    public Long readKey(Cursor cursor, int offset) {
-        return cursor.getLong(offset + 0);
+    public Void readKey(Cursor cursor, int offset) {
+        return null;
     }    
 
     @Override
     public Scan readEntity(Cursor cursor, int offset) {
         Scan entity = new Scan( //
-            cursor.getLong(offset + 0), // id
-            cursor.isNull(offset + 1) ? null : cursor.getString(offset + 1), // code
-            cursor.getLong(offset + 2), // time
-            cursor.isNull(offset + 3) ? null : cursor.getString(offset + 3), // backOne
-            cursor.isNull(offset + 4) ? null : cursor.getString(offset + 4), // backTwo
-            cursor.isNull(offset + 5) ? null : cursor.getString(offset + 5) // backThree
+            cursor.isNull(offset + 0) ? null : cursor.getString(offset + 0), // code
+            cursor.getLong(offset + 1), // time
+            cursor.isNull(offset + 2) ? null : cursor.getString(offset + 2), // backOne
+            cursor.isNull(offset + 3) ? null : cursor.getString(offset + 3), // backTwo
+            cursor.isNull(offset + 4) ? null : cursor.getString(offset + 4) // backThree
         );
         return entity;
     }
      
     @Override
     public void readEntity(Cursor cursor, Scan entity, int offset) {
-        entity.setId(cursor.getLong(offset + 0));
-        entity.setCode(cursor.isNull(offset + 1) ? null : cursor.getString(offset + 1));
-        entity.setTime(cursor.getLong(offset + 2));
-        entity.setBackOne(cursor.isNull(offset + 3) ? null : cursor.getString(offset + 3));
-        entity.setBackTwo(cursor.isNull(offset + 4) ? null : cursor.getString(offset + 4));
-        entity.setBackThree(cursor.isNull(offset + 5) ? null : cursor.getString(offset + 5));
+        entity.setCode(cursor.isNull(offset + 0) ? null : cursor.getString(offset + 0));
+        entity.setTime(cursor.getLong(offset + 1));
+        entity.setBackOne(cursor.isNull(offset + 2) ? null : cursor.getString(offset + 2));
+        entity.setBackTwo(cursor.isNull(offset + 3) ? null : cursor.getString(offset + 3));
+        entity.setBackThree(cursor.isNull(offset + 4) ? null : cursor.getString(offset + 4));
      }
     
     @Override
-    protected final Long updateKeyAfterInsert(Scan entity, long rowId) {
-        entity.setId(rowId);
-        return rowId;
+    protected final Void updateKeyAfterInsert(Scan entity, long rowId) {
+        // Unsupported or missing PK type
+        return null;
     }
     
     @Override
-    public Long getKey(Scan entity) {
-        if(entity != null) {
-            return entity.getId();
-        } else {
-            return null;
-        }
+    public Void getKey(Scan entity) {
+        return null;
     }
 
     @Override
     public boolean hasKey(Scan entity) {
-        throw new UnsupportedOperationException("Unsupported for entities with a non-null key");
+        // TODO
+        return false;
     }
 
     @Override

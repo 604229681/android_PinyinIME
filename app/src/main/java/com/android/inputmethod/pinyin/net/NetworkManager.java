@@ -6,6 +6,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
+import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
 
@@ -16,11 +17,13 @@ import com.android.inputmethod.pinyin.greendao.ScanDao;
 import com.android.inputmethod.pinyin.greendao.entity.Scan;
 import com.android.inputmethod.pinyin.util.DateUtil;
 import com.android.inputmethod.pinyin.util.JsonUtil;
-import com.tamic.novate.Novate;
-import com.tamic.novate.Throwable;
-import com.tamic.novate.download.DownLoadCallBack;
+import com.liulishuo.filedownloader.BaseDownloadTask;
+import com.liulishuo.filedownloader.FileDownloadListener;
+import com.liulishuo.filedownloader.FileDownloader;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,7 +35,6 @@ public class NetworkManager {
     private static final String TAG = "PinyinIME_NetworkManager";
     private static Map<String, String> headers = new HashMap<>();
 
-    private static Novate novate;
 
     private static Context mContext;
 
@@ -41,26 +43,14 @@ public class NetworkManager {
     private static ScanDao scanDao;
 
     public static NetHandler with(Context context) {
-        if (novate == null) {
+        if (netHandler == null) {
             mContext = context;
-            headers.put("Accept", "application/json");
-            novate = new Novate.Builder(context)
-                    //.addParameters(parameters)
-                    .connectTimeout(20)
-                    .writeTimeout(15)
-                    .baseUrl("http://download.fir.im/")
-                    .addHeader(headers)
-                    .addCache(true)
-                    .addLog(true)
-                    .build();
             netHandler = new NetHandler();
-            initDbHelp();
+            FileDownloader.setup(mContext);
         }
 
         return netHandler;
     }
-
-    //http://download.fir.im/v2/app/install/594b7071959d691cb400025e?download_token=342152ddc9580a251cbfce09c7eb0d88\u0026source=update
 
     public static class NetHandler {
 
@@ -77,39 +67,46 @@ public class NetworkManager {
             int versionCode = getVersionCode(mContext);
             if (Integer.parseInt(informationBean.getVersion()) > versionCode && versionCode != -1) {
                 Log.e(TAG, "downloadApk: =======" + informationBean.getInstall_url() + "      " + versionCode);
-                novate.download(informationBean.getUpdate_url(), "pinyinIME.apk", new DownLoadCallBack() {
+                FileDownloader.getImpl().create(informationBean.getInstall_url())
+                        .setPath(getOutputPath())
+                        .setListener(new FileDownloadListener() {
+                            @Override
+                            protected void pending(BaseDownloadTask task, int soFarBytes, int totalBytes) {
+                            }
 
-                    @Override
-                    public void onStart(String s) {
-                        super.onStart(s);
+                            @Override
+                            protected void connected(BaseDownloadTask task, String etag, boolean isContinue, int soFarBytes, int totalBytes) {
+                            }
 
-                    }
+                            @Override
+                            protected void progress(BaseDownloadTask task, int soFarBytes, int totalBytes) {
+                            }
 
-                    @Override
-                    public void onError(Throwable e) {
+                            @Override
+                            protected void blockComplete(BaseDownloadTask task) {
+                            }
 
-                    }
+                            @Override
+                            protected void retry(final BaseDownloadTask task, final Throwable ex, final int retryingTimes, final int soFarBytes) {
+                            }
 
-                    @Override
-                    public void onProgress(String key, int progress, long fileSizeDownloaded, long totalSize) {
-                        super.onProgress(key, progress, fileSizeDownloaded, totalSize);
-                        Log.v("test", fileSizeDownloaded + "");
+                            @Override
+                            protected void completed(BaseDownloadTask task) {
+                                installApk(task.getTargetFilePath());
+                            }
 
-                    }
+                            @Override
+                            protected void paused(BaseDownloadTask task, int soFarBytes, int totalBytes) {
+                            }
 
-                    @Override
-                    public void onSucess(String key, String path, String name, long fileSize) {
-                        Log.e(TAG, key + "   onSucess:   " + path + "  " + fileSize + "    " + name);
-                        installApk(path);
-                    }
+                            @Override
+                            protected void error(BaseDownloadTask task, Throwable e) {
+                            }
 
-                    @Override
-                    public void onCancel() {
-                        super.onCancel();
-
-                    }
-
-                });
+                            @Override
+                            protected void warn(BaseDownloadTask task) {
+                            }
+                        }).start();
             }
 
         }
@@ -156,12 +153,37 @@ public class NetworkManager {
 
 
     /*初始化数据库相关*/
-    private static void initDbHelp() {
-        DaoMaster.DevOpenHelper helper = new DaoMaster.DevOpenHelper(mContext, "Pinyin-IME.db", null);
-        SQLiteDatabase db = helper.getWritableDatabase();
-        DaoMaster daoMaster = new DaoMaster(db);
-        DaoSession daoSession = daoMaster.newSession();
-        scanDao = daoSession.getScanDao();
+    public static void initDbHelp(Context context) {
+        try {
+            DaoMaster.DevOpenHelper helper = new DaoMaster.DevOpenHelper(context, "Pinyin-IME.db");
+            SQLiteDatabase db = helper.getWritableDatabase();
+            DaoMaster daoMaster = new DaoMaster(db);
+            DaoSession daoSession = daoMaster.newSession();
+            scanDao = daoSession.getScanDao();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    //apk 路径
+    private static String getOutputPath() {
+        if (!Environment.getExternalStorageState().equalsIgnoreCase(Environment.MEDIA_MOUNTED)) {
+            return null;
+        }
+
+        File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES), "PinyinIME");
+        if (!mediaStorageDir.exists()) {
+            if (!mediaStorageDir.mkdirs()) {
+                Log.d("MyCameraApp", "failed to create directory");
+                return null;
+            }
+        }
+        // Create a media file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+
+        return mediaStorageDir.getPath() + File.separator +
+                "pinyin" + timeStamp + ".apk";
     }
 
     /**
@@ -170,7 +192,11 @@ public class NetworkManager {
      * @param scan
      */
     public static void insertScan(Scan scan) {
-        scanDao.insert(scan);
+        try {
+            scanDao.insertOrReplace(scan);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -179,7 +205,19 @@ public class NetworkManager {
      * @return
      */
     public static long getCurrentDayCodeCount() {
-        return scanDao.queryBuilder().where(ScanDao.Properties.Time.gt(DateUtil.getZeroOtherDayMillise(1))).count();
+        try {
+            return scanDao.queryBuilder().where(ScanDao.Properties.Time.gt(DateUtil.getZeroOtherDayMillise(0))).count();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    /**
+     * 删除3天前的数据
+     */
+    public static void deleteHistoryData() {
+        scanDao.queryBuilder().where(ScanDao.Properties.Time.gt(DateUtil.getZeroOtherDayMillise(-3))).buildDelete();
     }
 
 }

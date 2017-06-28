@@ -2,7 +2,7 @@ package com.android.inputmethod.pinyin.greendao.entity;
 
 import org.greenrobot.greendao.annotation.Entity;
 import org.greenrobot.greendao.annotation.Generated;
-import org.greenrobot.greendao.annotation.Id;
+import org.greenrobot.greendao.annotation.Keep;
 import org.greenrobot.greendao.annotation.Unique;
 
 /**
@@ -10,9 +10,6 @@ import org.greenrobot.greendao.annotation.Unique;
  */
 @Entity
 public class Scan {
-    @Id(autoincrement = true)
-    private long id;
-
     @Unique
     private String code;
 
@@ -25,9 +22,9 @@ public class Scan {
     private String backThree;
 
     @Generated(hash = 281010337)
-    public Scan(long id, String code, long time, String backOne, String backTwo,
+    @Keep
+    public Scan( String code, long time, String backOne, String backTwo,
                 String backThree) {
-        this.id = id;
         this.code = code;
         this.time = time;
         this.backOne = backOne;
@@ -35,17 +32,11 @@ public class Scan {
         this.backThree = backThree;
     }
 
+
     @Generated(hash = 997159697)
     public Scan() {
     }
 
-    public long getId() {
-        return this.id;
-    }
-
-    public void setId(long id) {
-        this.id = id;
-    }
 
     public String getCode() {
         return this.code;
