@@ -55,6 +55,7 @@ import com.android.inputmethod.pinyin.net.NetworkManager;
 import com.android.inputmethod.pinyin.usb.SocketServer;
 import com.android.inputmethod.pinyin.util.DateUtil;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
@@ -250,30 +251,42 @@ public class PinyinIME extends InputMethodService {
     private ComponentName componentName;
 
     //开始扫描
-    private void startScan() {
+    private synchronized void startScan() {
+        componentName = getTopActivity(this.getApplication());
 
-        componentName = getTopActivity(this.getApplicationContext());
-        if (componentName != null) {
-            System.out.println(componentName.getClassName() + "======onKeyDown");
-        }
+        Log.e(TAG, "commitResultText:  "+getCurrentInputBinding().toString());
+        Log.e(TAG, "commitResultText: "+getCurrentInputEditorInfo().fieldName+"    "+getCurrentInputEditorInfo().privateImeOptions+"  "+getCurrentInputEditorInfo().hintText );
 
-        if (socketServer == null) {
-            socketServer = new SocketServer();
-            socketServer.setSocketCallBack(new SocketServer.SocketCallBack() {
-                @Override
-                public void onSuccess(String code) {
-                    //只有在扫描界面才会触发单号
-                    if (componentName != null && (componentName.getClassName().contains("Weigh") || componentName.getClassName().contains("ScanActivity"))) {
-                        commitResultText(code);
+        if (componentName != null && componentName.getPackageName().contains("com.kaicom")) {
+            System.out.println(componentName.getClassName() + "======******onKeyDown=====" + componentName.getPackageName());
+
+            if (componentName.getClassName().contains("MainMenuActivity") || componentName.getClassName().contains("LoginActivity")) {
+                try {
+                    if (socketServer != null) {
+                        socketServer.disCloseSocket();
+                        socketServer = null;
                     }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
+            } else if (socketServer == null) {
+                socketServer = new SocketServer();
+                socketServer.setSocketCallBack(new SocketServer.SocketCallBack() {
+                    @Override
+                    public void onSuccess(String code) {
+                        //只有在扫描界面才会触发单号
+                        if (componentName != null && (componentName.getClassName().contains("Weigh") || componentName.getClassName().contains("ScanActivity"))) {
+                            commitResultText(code);
+                        }
+                    }
 
-                @Override
-                public void onFailed(String msg) {
+                    @Override
+                    public void onFailed(String msg) {
 
-                }
-            });
-            new Thread(socketServer).start();
+                    }
+                });
+                new Thread(socketServer).start();
+            }
         }
 
     }
@@ -858,8 +871,8 @@ public class PinyinIME extends InputMethodService {
         ic.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_UP, keyCode));
     }
 
-
-    public ComponentName getTopActivity(Context context) {
+    //获取顶部activity
+    private ComponentName getTopActivity(Context context) {
         ComponentName componentName = null;
         ActivityManager activityManager = (ActivityManager) context.getSystemService(Service.ACTIVITY_SERVICE);
         if (activityManager.getRunningTasks(1) != null) {
@@ -867,15 +880,6 @@ public class PinyinIME extends InputMethodService {
         }
 
         return componentName;
-
-//        List<ActivityManager.RunningTaskInfo> runningTaskInfoList = activityManager.getRunningTasks(Integer.MAX_VALUE);
-//        for (ActivityManager.RunningTaskInfo taskInfo : runningTaskInfoList) {
-//            if (taskInfo.topActivity.getPackageName() != null){
-//                ComponentName topActivity = runningTaskInfoList.get(0).topActivity;
-//                return topActivity;
-//            }
-//        }
-//        return null;
     }
 
     private void commitResultText(String resultText) {
@@ -890,7 +894,7 @@ public class PinyinIME extends InputMethodService {
             e.printStackTrace();
         } finally {
             NetworkManager.insertScan(new Scan(resultText, System.currentTimeMillis(), "", "", ""));
-            showScanWindow();
+            showScanWindow(resultText);
         }
         if (null != mComposingView) {
             mComposingView.setVisibility(View.INVISIBLE);
@@ -2268,12 +2272,13 @@ public class PinyinIME extends InputMethodService {
 
     private Handler mHandler = new Handler();
 
-    private void showScanWindow() {
+    private void showScanWindow(final String code) {
         mHandler.post(new Runnable() {
             @Override
             public void run() {
                 try {
-                    codeCount = NetworkManager.getCurrentDayCodeCount();
+                    //codeCount = NetworkManager.getCurrentDayCodeCount();
+                    codeCount++;
                     if (windowManager == null) {
                         //类型是TYPE_TOAST，像一个普通的Android Toast一样。这样就不需要申请悬浮窗权限了。
                         params = new WindowManager.LayoutParams();
@@ -2297,11 +2302,12 @@ public class PinyinIME extends InputMethodService {
                         button.setTextSize(25);
                         button.setTextColor(getResources().getColor(R.color.code_color_idle));
                         button.setFocusableInTouchMode(false);
+
                         windowManager.addView(button, params);
-                        button.setText((codeCount) + " 票");
+                        button.setText((codeCount) + " 票"+"\r\n"+code);
                     } else {
                         if (null != button) {
-                            button.setText((codeCount) + " 票");
+                            button.setText((codeCount) + " 票"+"\r\n"+code);
                         }
                     }
                 } catch (Exception e) {

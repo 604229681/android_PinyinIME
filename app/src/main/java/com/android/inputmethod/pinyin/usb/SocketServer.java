@@ -27,6 +27,7 @@ public class SocketServer implements Runnable {
     private ServerSocket mSocketServer = null;
     private InputStream inputStream = null;
     private OutputStream outputStream = null;
+    private Socket socket = null;
 
     Handler mMessageHandler = new Handler() {
         public void handleMessage(Message msg) {
@@ -84,6 +85,8 @@ public class SocketServer implements Runnable {
     @Override
     public void run() {
         try {
+
+            isClose = false;
             closeSocket();
             Log.d(TAG, "start socket server...");
             if (mSocketServer == null) {
@@ -92,9 +95,9 @@ public class SocketServer implements Runnable {
                 mSocketServer.bind(new InetSocketAddress(SERVER_PORT)); // <-- now bind it
 
                 Log.d(TAG, "connecting...");
-                Socket client = mSocketServer.accept();
-                inputStream = client.getInputStream();
-                outputStream = client.getOutputStream();
+                socket = mSocketServer.accept();
+                inputStream = socket.getInputStream();
+                outputStream = socket.getOutputStream();
             }
 
             while (true) {
@@ -117,8 +120,16 @@ public class SocketServer implements Runnable {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            mMessageHandler.obtainMessage(MSG_RESTART_THREATH, null).sendToTarget();
+            if (!isClose)
+                mMessageHandler.obtainMessage(MSG_RESTART_THREATH, null).sendToTarget();
         }
+    }
+
+    public boolean isClose = false;
+
+    public void disCloseSocket() throws IOException {
+        closeSocket();
+        isClose = true;
     }
 
     //关闭socket 服务
@@ -134,6 +145,10 @@ public class SocketServer implements Runnable {
         if (mSocketServer != null) {
             mSocketServer.close();
             mSocketServer = null;
+        }
+        if (socket != null) {
+            socket.close();
+            socket = null;
         }
     }
 
